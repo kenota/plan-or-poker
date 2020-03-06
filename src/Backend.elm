@@ -46,3 +46,10 @@ updateFromFrontend sessionId clientId msg model =
             ( m
             , Cmd.batch [ sendHello ]
             )
+
+        StartVote q ->
+            let
+                m =
+                    { model | currentQuestion = q }
+            in
+            ( m, Cmd.none )

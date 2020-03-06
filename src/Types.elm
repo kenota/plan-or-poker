@@ -16,6 +16,7 @@ type alias FrontendModel =
     , username : String
     , path : UiPath
     , refinementState : Maybe BackendModel
+    , proposedQuestion : String
     }
 
 
@@ -55,11 +56,14 @@ type FrontendMsg
     | UrlChanged Url
     | UsernameChanged String
     | Join
+    | QuestionChanged String
     | NoOpFrontendMsg
+    | SubmitQuestion
 
 
 type ToBackend
     = ClientJoin String
+    | StartVote String
 
 
 type BackendMsg
@@ -68,4 +72,4 @@ type BackendMsg
 
 type ToFrontend
     = NoOpToFrontend
-    | List User
+    | ServerState BackendModel
