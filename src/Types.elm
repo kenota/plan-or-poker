@@ -3,6 +3,7 @@ module Types exposing (..)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Lamdera exposing (ClientId, SessionId)
+import Time
 import Url exposing (Url)
 
 
@@ -11,18 +12,25 @@ type UiPath
     | UsernameReceived
 
 
+type alias BackendClientState =
+    { id : ClientId
+    , backendModel : BackendModel
+    }
+
+
 type alias FrontendModel =
     { key : Key
     , username : String
     , path : UiPath
-    , refinementState : Maybe BackendModel
+    , refinementState : Maybe BackendClientState
     , proposedQuestion : String
     }
 
 
 type alias Vote =
-    { user : String
+    { clientId : ClientId
     , score : Int
+    , name : String
     }
 
 
@@ -41,6 +49,7 @@ type RefinementState
 type alias User =
     { id : ClientId
     , name : String
+    , lastPong : Time.Posix
     }
 
 
@@ -48,6 +57,7 @@ type alias BackendModel =
     { currentQuestion : String
     , state : RefinementState
     , currentUsers : List User
+    , currentTime : Time.Posix
     }
 
 
@@ -59,17 +69,22 @@ type FrontendMsg
     | QuestionChanged String
     | NoOpFrontendMsg
     | SubmitQuestion
+    | SubmitVote Int
 
 
 type ToBackend
     = ClientJoin String
     | StartVote String
+    | Pong Time.Posix
+    | ClientVote Int
 
 
 type BackendMsg
     = NoOpBackendMsg
+    | Tick Time.Posix
 
 
 type ToFrontend
     = NoOpToFrontend
-    | ServerState BackendModel
+    | ServerState BackendClientState
+    | Ping Time.Posix

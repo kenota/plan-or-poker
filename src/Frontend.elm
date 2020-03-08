@@ -80,6 +80,9 @@ update msg model =
             in
             ( { model | proposedQuestion = "" }, Lamdera.sendToBackend (StartVote q) )
 
+        SubmitVote v ->
+            ( model, Lamdera.sendToBackend (ClientVote v) )
+
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
@@ -90,6 +93,9 @@ updateFromBackend msg model =
         ServerState s ->
             ( { model | refinementState = Just s }, Cmd.none )
 
+        Ping t ->
+            ( model, Lamdera.sendToBackend (Pong t) )
+
 
 view : Model -> Browser.Document FrontendMsg
 view model =
@@ -98,17 +104,33 @@ view model =
     }
 
 
-headerStyle =
-    [ Font.family
+globalFontFamily =
+    Font.family
         [ Font.external
             { name = "Open Sans"
             , url = "https://fonts.googleapis.com/css?family=Open+Sans&display=swap"
             }
         , Font.sansSerif
         ]
-    , Font.size 38
-    , E.padding 30
+
+
+headerStyle =
+    [ globalFontFamily
+    , Font.size 32
+    , E.width E.fill
+    , E.height (E.px 60)
+    , Background.color (E.rgb255 8 217 214)
     ]
+
+
+heading1 =
+    [ globalFontFamily
+    , Font.size 25
+    ]
+
+
+normalText =
+    [ globalFontFamily, Font.size 12 ]
 
 
 joinBlock : FrontendModel -> E.Element FrontendMsg
@@ -132,23 +154,16 @@ joinBlock m =
         ]
 
 
-renderServerState : FrontendModel -> BackendModel -> E.Element FrontendMsg
-renderServerState f b =
-    case b.state of
-        NoQuestion ->
-            askQuestionBlock f
-
-        Voting _ ->
-            E.row [] [ E.text "Voting" ]
-
-        VoteComplete _ ->
-            E.row [] [ E.text "Vote complete" ]
-
-
 askQuestionBlock : FrontendModel -> E.Element FrontendMsg
 askQuestionBlock m =
-    E.row [ E.centerX, E.width (E.fill |> E.maximum 800), E.spacing 10, E.padding 10 ]
-        [ Input.text []
+    E.row
+        [ E.centerX
+        , E.width E.fill
+        , E.spacing 10
+        , E.padding 10
+        ]
+        [ Input.text
+            []
             { label = Input.labelLeft [ E.padding 10 ] (E.text "Question")
             , onChange = newQuestion
             , placeholder = Nothing
@@ -164,6 +179,80 @@ askQuestionBlock m =
             , onPress = Just SubmitQuestion
             }
         ]
+
+
+renderQuestion : Question -> E.Element FrontendMsg
+renderQuestion q =
+    E.row []
+        [ E.text ("Question: " ++ q.question)
+        ]
+
+
+renderVotingStatus : Question -> Int -> E.Element FrontendMsg
+renderVotingStatus q totalUsers =
+    E.row []
+        [ E.text "Voted "
+        , E.text <| String.fromInt <| List.length q.votes
+        , E.text " / "
+        , E.text <| String.fromInt totalUsers
+        ]
+
+
+renderVoteButtons : E.Element FrontendMsg
+renderVoteButtons =
+    E.row [ E.width E.fill, E.spacing 10, E.spaceEvenly ]
+        (List.map
+            (\score -> voteButton score)
+            cards
+        )
+
+
+voteButton : Int -> E.Element FrontendMsg
+voteButton score =
+    Input.button
+        [ Background.color currentTheme.secondary
+        , E.padding 20
+        ]
+        { onPress = Just (SubmitVote score)
+        , label = E.text <| String.fromInt score
+        }
+
+
+renderStatusBar : FrontendModel -> E.Element FrontendMsg
+renderStatusBar m =
+    E.row []
+        [ E.text "hello" ]
+
+
+renderServerState : FrontendModel -> BackendClientState -> E.Element FrontendMsg
+renderServerState f b =
+    case b.backendModel.state of
+        NoQuestion ->
+            E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
+                [ askQuestionBlock f
+                , E.el heading1 (E.text "Current Users")
+                , listOfUsers b.backendModel.currentUsers
+                ]
+
+        Voting q ->
+            E.column [ E.width E.fill ]
+                [ E.row [ E.padding 10, E.width E.fill ]
+                    [ renderQuestion q
+                    , E.el [ E.alignRight ] (renderVotingStatus q <| List.length b.backendModel.currentUsers)
+                    ]
+                , if didIVote q.votes b.id then
+                    E.el [ E.padding 10 ] (E.text "You have voted")
+
+                  else
+                    renderVoteButtons
+                ]
+
+        VoteComplete q ->
+            E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
+                [ renderQuestion q
+                , renderVoteResults q.votes
+                , askQuestionBlock f
+                ]
 
 
 newName : String -> FrontendMsg
@@ -201,12 +290,80 @@ selectView m =
                     E.row [] [ E.text "No server state" ]
 
                 Just s ->
-                    renderServerState m s
+                    E.column
+                        [ E.centerX
+                        , E.width (E.fill |> E.maximum 800)
+                        ]
+                        [ renderServerState m s ]
+
+
+renderVoteResults : List Vote -> E.Element FrontendMsg
+renderVoteResults votes =
+    let
+        sortedVotes =
+            List.sortBy .score votes
+    in
+    E.wrappedRow [ E.spacing 10 ] (List.concat <| List.map (\score -> voteBlock votes score) cards)
+
+
+onlyScoredAs : Int -> Vote -> Maybe Vote
+onlyScoredAs score vote =
+    if vote.score == score then
+        Just vote
+
+    else
+        Nothing
+
+
+didIVote : List Vote -> Lamdera.ClientId -> Bool
+didIVote votes clientId =
+    let
+        u =
+            List.head <| List.filter (\x -> x.clientId == clientId) votes
+    in
+    case u of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
+
+
+voteBlock : List Vote -> Int -> List (E.Element FrontendMsg)
+voteBlock votes score =
+    let
+        filteredVotes =
+            List.filterMap (onlyScoredAs score) votes
+    in
+    if List.length filteredVotes == 0 then
+        []
+
+    else
+        [ E.column
+            [ E.spacing 10
+            , E.padding 10
+            , Border.width 1
+            , Border.rounded 4
+            ]
+            (List.append
+                [ E.el [ E.centerX ] (E.text <| String.fromInt score) ]
+                (List.map
+                    (\v -> E.el [] (E.text v.name))
+                    filteredVotes
+                )
+            )
+        ]
+
+
+renderSpecificResults : List Vote -> Int -> List (E.Element FrontendMsg)
+renderSpecificResults votes score =
+    [ E.wrappedRow [] [] ]
 
 
 header : E.Element FrontendMsg
 header =
-    E.row [ E.width E.fill, E.height (E.px 60), Background.color (E.rgb255 8 217 214) ]
+    E.row
+        headerStyle
         [ E.el [ E.centerX ] (E.text "Plan or poker") ]
 
 
@@ -218,18 +375,6 @@ usernameInput s =
 joinButton : Html FrontendMsg
 joinButton =
     Html.button [ E.onClick Join ] [ Html.text "Join" ]
-
-
-renderListOfUsers : List User -> Html FrontendMsg
-renderListOfUsers l =
-    Html.ul
-        []
-        (List.map renderUser l)
-
-
-renderUser : User -> Html FrontendMsg
-renderUser u =
-    Html.li [] [ Html.text u.name ]
 
 
 type alias Theme =
@@ -247,3 +392,22 @@ currentTheme =
     , text = E.rgb255 37 42 52
     , background = E.rgb255 234 234 234
     }
+
+
+listOfUsers : List User -> E.Element FrontendMsg
+listOfUsers l =
+    let
+        nameList =
+            List.sort (List.map (\x -> x.name) l)
+    in
+    E.column [] (List.map renderUser nameList)
+
+
+renderUser : String -> E.Element FrontendMsg
+renderUser s =
+    E.row [] [ E.text s ]
+
+
+cards : List Int
+cards =
+    [ 1, 2, 3, 5, 8, 13 ]
