@@ -3,6 +3,7 @@ module Types exposing (..)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Lamdera exposing (ClientId, SessionId)
+import Set exposing (Set)
 import Time
 import Url exposing (Url)
 
@@ -56,7 +57,7 @@ type alias User =
 type alias BackendModel =
     { currentQuestion : String
     , state : RefinementState
-    , currentUsers : List User
+    , currentUsers : Set User
     , currentTime : Time.Posix
     }
 
