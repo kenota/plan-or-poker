@@ -119,7 +119,14 @@ headerStyle =
     [ Font.size 32
     , E.width E.fill
     , E.height (E.px 60)
-    , Background.color (E.rgb255 8 217 214)
+    , Background.color currentTheme.primary
+    , Font.color currentTheme.invertedText
+    , Border.shadow
+        { offset = ( 0, 0 )
+        , size = 1
+        , blur = 1
+        , color = currentTheme.text
+        }
     ]
 
 
@@ -143,6 +150,7 @@ joinBlock m =
             }
         , Input.button
             [ Background.color currentTheme.secondary
+            , Font.color currentTheme.invertedText
             , E.padding 10
             , E.height E.fill
             , Border.rounded 2
@@ -170,6 +178,7 @@ askQuestionBlock m =
             }
         , Input.button
             [ Background.color currentTheme.secondary
+            , Font.color currentTheme.invertedText
             , E.padding 10
             , E.height E.fill
             , Border.rounded 2
@@ -210,6 +219,7 @@ voteButton : Int -> E.Element FrontendMsg
 voteButton score =
     Input.button
         [ Background.color currentTheme.secondary
+        , Font.color currentTheme.invertedText
         , E.padding 20
         ]
         { onPress = Just (SubmitVote score)
@@ -371,15 +381,17 @@ type alias Theme =
     , primary : E.Color
     , secondary : E.Color
     , background : E.Color
+    , invertedText : E.Color
     }
 
 
 currentTheme : Theme
 currentTheme =
-    { primary = E.rgb255 8 217 214
-    , secondary = E.rgb255 255 46 99
+    { primary = E.rgb255 52 168 83
+    , secondary = E.rgb255 26 115 232
     , text = E.rgb255 37 42 52
-    , background = E.rgb255 234 234 234
+    , background = E.rgb255 255 255 255
+    , invertedText = E.rgb255 255 255 255
     }
 
 
