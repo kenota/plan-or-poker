@@ -97,6 +97,17 @@ updateFromBackend msg model =
             ( model, Lamdera.sendToBackend (Pong t) )
 
 
+manualCss =
+    Html.node "style"
+        []
+        [ Html.text <|
+            """
+        @import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap')
+        html { font-family 'Open Sans', sans; }
+        """
+        ]
+
+
 view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "Planning poker"
@@ -104,19 +115,8 @@ view model =
     }
 
 
-globalFontFamily =
-    Font.family
-        [ Font.external
-            { name = "Open Sans"
-            , url = "https://fonts.googleapis.com/css?family=Open+Sans&display=swap"
-            }
-        , Font.sansSerif
-        ]
-
-
 headerStyle =
-    [ globalFontFamily
-    , Font.size 32
+    [ Font.size 32
     , E.width E.fill
     , E.height (E.px 60)
     , Background.color (E.rgb255 8 217 214)
@@ -124,13 +124,12 @@ headerStyle =
 
 
 heading1 =
-    [ globalFontFamily
-    , Font.size 25
+    [ Font.size 25
     ]
 
 
 normalText =
-    [ globalFontFamily, Font.size 12 ]
+    [ Font.size 12 ]
 
 
 joinBlock : FrontendModel -> E.Element FrontendMsg
@@ -365,16 +364,6 @@ header =
     E.row
         headerStyle
         [ E.el [ E.centerX ] (E.text "Plan or poker") ]
-
-
-usernameInput : String -> Html FrontendMsg
-usernameInput s =
-    Html.input [ A.placeholder "Username", A.value s, E.onInput UsernameChanged ] []
-
-
-joinButton : Html FrontendMsg
-joinButton =
-    Html.button [ E.onClick Join ] [ Html.text "Join" ]
 
 
 type alias Theme =
