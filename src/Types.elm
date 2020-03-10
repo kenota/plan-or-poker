@@ -2,6 +2,7 @@ module Types exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
+import Dict exposing (Dict)
 import Lamdera exposing (ClientId, SessionId)
 import Time
 import Url exposing (Url)
@@ -49,15 +50,15 @@ type RefinementState
 type alias User =
     { id : ClientId
     , name : String
-    , lastPong : Time.Posix
+    , lastPing : Maybe Int
     }
 
 
 type alias BackendModel =
     { currentQuestion : String
     , state : RefinementState
-    , currentUsers : List User
-    , currentTime : Time.Posix
+    , currentUsers : Dict ClientId User
+    , currentTime : Maybe Int
     }
 
 
@@ -70,12 +71,13 @@ type FrontendMsg
     | NoOpFrontendMsg
     | SubmitQuestion
     | SubmitVote Int
+    | NewTime Time.Posix
 
 
 type ToBackend
     = ClientJoin String
     | StartVote String
-    | Pong Time.Posix
+    | Ping Time.Posix String
     | ClientVote Int
 
 
@@ -87,4 +89,3 @@ type BackendMsg
 type ToFrontend
     = NoOpToFrontend
     | ServerState BackendClientState
-    | Ping Time.Posix

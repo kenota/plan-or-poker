@@ -2,6 +2,7 @@ module Frontend exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation as Nav
+import Dict as Dict
 import Element as E
 import Element.Background as Background
 import Element.Border as Border
@@ -11,6 +12,7 @@ import Html exposing (Html)
 import Html.Attributes as A
 import Html.Events as E
 import Lamdera
+import Time
 import Types exposing (..)
 import Url
 
@@ -26,7 +28,7 @@ app =
         , onUrlChange = UrlChanged
         , update = update
         , updateFromBackend = updateFromBackend
-        , subscriptions = \m -> Sub.none
+        , subscriptions = \m -> Time.every 1000 NewTime
         , view = view
         }
 
@@ -83,6 +85,14 @@ update msg model =
         SubmitVote v ->
             ( model, Lamdera.sendToBackend (ClientVote v) )
 
+        NewTime t ->
+            case model.path of
+                Types.AskingUsername ->
+                    ( model, Cmd.none )
+
+                UsernameReceived ->
+                    ( model, Lamdera.sendToBackend (Ping t model.username) )
+
 
 updateFromBackend : ToFrontend -> Model -> ( Model, Cmd FrontendMsg )
 updateFromBackend msg model =
@@ -92,9 +102,6 @@ updateFromBackend msg model =
 
         ServerState s ->
             ( { model | refinementState = Just s }, Cmd.none )
-
-        Ping t ->
-            ( model, Lamdera.sendToBackend (Pong t) )
 
 
 manualCss =
@@ -240,14 +247,14 @@ renderServerState f b =
             E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
                 [ askQuestionBlock f
                 , E.el heading1 (E.text "Current Users")
-                , listOfUsers b.backendModel.currentUsers
+                , listOfUsers <| Dict.values b.backendModel.currentUsers
                 ]
 
         Voting q ->
             E.column [ E.width E.fill ]
                 [ E.row [ E.padding 10, E.width E.fill ]
                     [ renderQuestion q
-                    , E.el [ E.alignRight ] (renderVotingStatus q <| List.length b.backendModel.currentUsers)
+                    , E.el [ E.alignRight ] (renderVotingStatus q <| Dict.size b.backendModel.currentUsers)
                     ]
                 , if didIVote q.votes b.id then
                     E.el [ E.padding 10 ] (E.text "You have voted")

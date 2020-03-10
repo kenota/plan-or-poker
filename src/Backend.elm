@@ -1,5 +1,6 @@
 module Backend exposing (..)
 
+import Dict exposing (Dict)
 import Html
 import Lamdera exposing (ClientId, SessionId)
 import Time
@@ -28,24 +29,31 @@ init : ( Model, Cmd BackendMsg )
 init =
     ( { currentQuestion = ""
       , state = NoQuestion
-      , currentUsers = []
-      , currentTime = Time.millisToPosix 0
+      , currentUsers = Dict.empty
+      , currentTime = Nothing
       }
     , Cmd.none
     )
 
 
-cleanupLostClients : List User -> Time.Posix -> Int -> List User
-cleanupLostClients users t timeoutMs =
-    List.filter
-        (\u ->
-            Time.posixToMillis u.lastPong
-                == 0
-                || Time.posixToMillis t
-                - Time.posixToMillis u.lastPong
-                < timeoutMs
-        )
-        users
+isUserActive : User -> Int -> Int -> Bool
+isUserActive user currentTime timeout =
+    case user.lastPing of
+        Nothing ->
+            False
+
+        Just lastPing ->
+            currentTime - lastPing < timeout
+
+
+cleanupLostClients : Dict ClientId User -> Maybe Int -> Int -> Dict ClientId User
+cleanupLostClients users currentTime timeoutMs =
+    case currentTime of
+        Nothing ->
+            users
+
+        Just t ->
+            Dict.filter (\k v -> isUserActive v t timeoutMs) users
 
 
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
@@ -56,16 +64,18 @@ update msg model =
 
         Tick t ->
             let
-                newUserList =
-                    cleanupLostClients model.currentUsers t (5 * 1000)
+                newTime =
+                    Just (Time.posixToMillis t)
+
+                newUserMap =
+                    cleanupLostClients model.currentUsers newTime (5 * 1000)
 
                 newModel =
-                    { model | currentUsers = newUserList }
+                    { model | currentUsers = newUserMap, currentTime = newTime }
             in
             ( newModel
             , Cmd.batch
-                [ broadcast (getClientIdList newModel.currentUsers) (Ping t)
-                , broadcastCurrentState newModel.currentUsers newModel
+                [ broadcastCurrentState newModel.currentUsers newModel
                 ]
             )
 
@@ -83,11 +93,12 @@ updateFromFrontend sessionId clientId msg model =
                 m =
                     { model
                         | currentUsers =
-                            upsertUser model.currentUsers
+                            Dict.insert clientId
                                 { name = s
                                 , id = clientId
-                                , lastPong = model.currentTime
+                                , lastPing = model.currentTime
                                 }
+                                model.currentUsers
                     }
 
                 sendHello =
@@ -115,7 +126,7 @@ updateFromFrontend sessionId clientId msg model =
                             saveVote model q.votes clientId score
 
                         newModel =
-                            if List.length updatedVotes /= List.length model.currentUsers then
+                            if List.length updatedVotes /= Dict.size model.currentUsers then
                                 { model | state = Voting { question = q.question, votes = updatedVotes } }
 
                             else
@@ -131,21 +142,20 @@ updateFromFrontend sessionId clientId msg model =
                 VoteComplete q ->
                     ( model, Cmd.none )
 
-        Pong t ->
+        Ping t name ->
             let
-                maybeUser =
-                    List.head (List.filter (\x -> x.id == clientId) model.currentUsers)
+                newModel =
+                    { model
+                        | currentUsers =
+                            Dict.insert clientId
+                                { id = clientId
+                                , lastPing = model.currentTime
+                                , name = name
+                                }
+                                model.currentUsers
+                    }
             in
-            case maybeUser of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just u ->
-                    let
-                        updated =
-                            { u | lastPong = t }
-                    in
-                    ( { model | currentUsers = upsertUser model.currentUsers updated }, Cmd.none )
+            ( newModel, Cmd.none )
 
 
 broadcast clients msg =
@@ -154,9 +164,11 @@ broadcast clients msg =
         |> Cmd.batch
 
 
+broadcastCurrentState : Dict ClientId User -> BackendModel -> Cmd BackendMsg
 broadcastCurrentState clients m =
     clients
-        |> List.map (\conn -> Lamdera.sendToFrontend conn.id (ServerState { id = conn.id, backendModel = m }))
+        |> Dict.map (\clientId conn -> Lamdera.sendToFrontend conn.id (ServerState { id = conn.id, backendModel = m }))
+        |> Dict.values
         |> Cmd.batch
 
 
@@ -164,7 +176,7 @@ clientNameById : BackendModel -> ClientId -> String
 clientNameById model clientId =
     let
         u =
-            List.head <| List.filter (\x -> x.id == clientId) model.currentUsers
+            Dict.get clientId model.currentUsers
     in
     case u of
         Just user ->
