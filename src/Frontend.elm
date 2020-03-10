@@ -319,7 +319,7 @@ renderVoteResults votes =
         sortedVotes =
             List.sortBy .score votes
     in
-    E.wrappedRow [ E.spacing 10 ] (List.concat <| List.map (\score -> voteBlock votes score) cards)
+    E.wrappedRow [ E.spacing 10, E.width E.fill ] (List.concat <| List.map (\score -> voteBlock votes score) cards)
 
 
 onlyScoredAs : Int -> Vote -> Maybe Vote
