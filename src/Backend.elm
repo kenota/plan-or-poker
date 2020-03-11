@@ -126,7 +126,7 @@ updateFromFrontend sessionId clientId msg model =
                             saveVote model q.votes clientId score
 
                         newModel =
-                            if List.length updatedVotes /= Dict.size model.currentUsers then
+                            if List.length updatedVotes < Dict.size model.currentUsers then
                                 { model | state = Voting { question = q.question, votes = updatedVotes } }
 
                             else
