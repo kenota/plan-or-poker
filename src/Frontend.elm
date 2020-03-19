@@ -9,8 +9,10 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Lamdera
 import Time
 import Types exposing (..)
@@ -105,27 +107,24 @@ updateFromBackend msg model =
 
 
 manualCss =
-    Html.node "style"
-        []
-        [ Html.text <|
-            """
-        @import url('https://fonts.googleapis.com/css?family=Open+Sans&display=swap')
-        html { font-family 'Open Sans', sans; }
-        """
+    Html.node "link"
+        [ Html.Attributes.property "href" (Encode.string "https://fonts.googleapis.com/css2?family=Roboto&family=Rubik:wght@300&display=swap")
+        , Html.Attributes.property "rel" (Encode.string "stylesheet")
         ]
+        []
 
 
 view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "Planning poker"
-    , body = [ mainLayout model ]
+    , body = [ manualCss, mainLayout model ]
     }
 
 
 headerStyle =
-    [ Font.size 32
+    [ Font.size 28
     , E.width E.fill
-    , E.height (E.px 60)
+    , E.height (E.px 64)
     , Background.color currentTheme.primary
     , Font.color currentTheme.invertedText
     , Border.shadow
@@ -169,16 +168,11 @@ joinBlock m =
         [ Input.text [ onEnter Join ]
             { label = Input.labelLeft [ E.padding 10 ] (E.text "Name")
             , onChange = newName
-            , placeholder = Nothing
+            , placeholder = Just (Input.placeholder [] (E.text "Hello"))
             , text = m.username
             }
         , Input.button
-            [ Background.color currentTheme.secondary
-            , Font.color currentTheme.invertedText
-            , E.padding 10
-            , E.height E.fill
-            , Border.rounded 2
-            ]
+            mainButtonStyle
             { label = E.text "Join"
             , onPress = Just Join
             }
@@ -201,16 +195,29 @@ askQuestionBlock m =
             , text = m.proposedQuestion
             }
         , Input.button
-            [ Background.color currentTheme.secondary
-            , Font.color currentTheme.invertedText
-            , E.padding 10
-            , E.height E.fill
-            , Border.rounded 2
-            ]
+            mainButtonStyle
             { label = E.text "Submit"
             , onPress = Just SubmitQuestion
             }
         ]
+
+
+mainButtonStyle : List (E.Attribute msg)
+mainButtonStyle =
+    [ Background.color currentTheme.secondary
+    , Font.color currentTheme.invertedText
+    , Font.family [ Font.typeface "Rubik" ]
+    , Font.size 14
+    , Font.letterSpacing 1.2
+    , Border.rounded 4
+    , E.height (E.px 44)
+    , E.paddingEach
+        { top = 0
+        , right = 24
+        , bottom = 0
+        , left = 24
+        }
+    ]
 
 
 renderQuestion : Question -> E.Element FrontendMsg
@@ -232,7 +239,7 @@ renderVotingStatus q totalUsers =
 
 renderVoteButtons : E.Element FrontendMsg
 renderVoteButtons =
-    E.row [ E.width E.fill, E.spacing 10, E.spaceEvenly ]
+    E.row [ E.width E.fill, E.spacing 10, E.spaceEvenly, E.paddingEach { top = 0, right = 14, bottom = 10, left = 14 } ]
         (List.map
             (\score -> voteButton score)
             cards
@@ -263,8 +270,6 @@ renderServerState f b =
         NoQuestion ->
             E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
                 [ askQuestionBlock f
-                , E.el heading1 (E.text "Current Users")
-                , listOfUsers <| Dict.values b.backendModel.currentUsers
                 ]
 
         Voting q ->
@@ -307,8 +312,28 @@ mainLayout m =
 
 rootContainer : FrontendModel -> E.Element FrontendMsg
 rootContainer m =
-    E.column [ E.centerX, E.width E.fill ]
-        [ header, selectView m ]
+    E.column [ E.centerX, E.width E.fill, E.height E.fill ]
+        [ header
+        , E.column
+            [ E.centerX
+            , E.width (E.fill |> E.maximum 800)
+            , E.height E.fill
+            ]
+            [ E.el [ E.width E.fill, E.height (E.fillPortion 1) ] (selectView m)
+            , E.el [ E.width E.fill, E.height (E.fillPortion 1) ] (permanentuserList m)
+            ]
+        ]
+
+
+permanentuserList : FrontendModel -> E.Element FrontendMsg
+permanentuserList m =
+    case m.refinementState of
+        Nothing ->
+            E.column [] []
+
+        Just s ->
+            E.column []
+                [ listOfUsers <| Dict.values s.backendModel.currentUsers ]
 
 
 selectView : FrontendModel -> E.Element FrontendMsg
@@ -425,12 +450,12 @@ listOfUsers l =
         nameList =
             List.sort (List.map (\x -> x.name) l)
     in
-    E.column [] (List.map renderUser nameList)
+    E.column [ E.spacing 12 ] (List.map renderUser nameList)
 
 
 renderUser : String -> E.Element FrontendMsg
 renderUser s =
-    E.row [] [ E.text s ]
+    E.row [ E.paddingEach { top = 0, right = 0, bottom = 0, left = 12 } ] [ E.text ("\u{1F9CD}" ++ s) ]
 
 
 cards : List Int

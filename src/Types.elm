@@ -84,6 +84,7 @@ type ToBackend
 type BackendMsg
     = NoOpBackendMsg
     | Tick Time.Posix
+    | CheckVoting Time.Posix
 
 
 type ToFrontend

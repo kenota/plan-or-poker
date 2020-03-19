@@ -22,7 +22,7 @@ app =
 
 subscriptions : Model -> Sub BackendMsg
 subscriptions model =
-    Time.every 1000 Tick
+    Sub.batch [ Time.every 1000 Tick, Time.every 1000 CheckVoting ]
 
 
 init : ( Model, Cmd BackendMsg )
@@ -61,6 +61,27 @@ update msg model =
     case msg of
         NoOpBackendMsg ->
             ( model, Cmd.none )
+
+        CheckVoting _ ->
+            case model.state of
+                NoQuestion ->
+                    ( model, Cmd.none )
+
+                VoteComplete _ ->
+                    ( model, Cmd.none )
+
+                Voting q ->
+                    let
+                        newModel =
+                            if List.length q.votes < Dict.size model.currentUsers then
+                                { model | state = Voting { question = q.question, votes = q.votes } }
+
+                            else
+                                { model | state = VoteComplete { question = q.question, votes = q.votes } }
+                    in
+                    ( newModel
+                    , broadcastCurrentState model.currentUsers newModel
+                    )
 
         Tick t ->
             let
