@@ -9,8 +9,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes as A
-import Html.Events as E
+import Html.Events
+import Json.Decode as Decode
 import Lamdera
 import Time
 import Types exposing (..)
@@ -146,10 +146,27 @@ normalText =
     [ Font.size 12 ]
 
 
+onEnter : msg -> E.Attribute msg
+onEnter msg =
+    E.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Enter" then
+                            Decode.succeed msg
+
+                        else
+                            Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
+
 joinBlock : FrontendModel -> E.Element FrontendMsg
 joinBlock m =
     E.row [ E.centerX, E.width (E.fill |> E.maximum 800), E.spacing 10, E.padding 10 ]
-        [ Input.text []
+        [ Input.text [ onEnter Join ]
             { label = Input.labelLeft [ E.padding 10 ] (E.text "Name")
             , onChange = newName
             , placeholder = Nothing
