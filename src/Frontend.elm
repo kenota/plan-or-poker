@@ -25,7 +25,7 @@ type alias Model =
 
 app =
     Lamdera.frontend
-        { init = init
+        { init = Types.initFrontend
         , onUrlRequest = UrlClicked
         , onUrlChange = UrlChanged
         , update = update
@@ -33,18 +33,6 @@ app =
         , subscriptions = \m -> Time.every 1000 NewTime
         , view = view
         }
-
-
-init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
-init url key =
-    ( { key = key
-      , username = ""
-      , path = AskingUsername
-      , refinementState = Nothing
-      , proposedQuestion = ""
-      }
-    , Cmd.none
-    )
 
 
 update : FrontendMsg -> Model -> ( Model, Cmd FrontendMsg )
@@ -63,7 +51,7 @@ update msg model =
                     )
 
         UrlChanged url ->
-            ( model, Cmd.none )
+            ( { model | url = url }, Cmd.none )
 
         NoOpFrontendMsg ->
             ( model, Cmd.none )

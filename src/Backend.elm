@@ -13,7 +13,7 @@ type alias Model =
 
 app =
     Lamdera.backend
-        { init = init
+        { init = Types.initBackend
         , update = update
         , updateFromFrontend = updateFromFrontend
         , subscriptions = subscriptions
@@ -23,17 +23,6 @@ app =
 subscriptions : Model -> Sub BackendMsg
 subscriptions model =
     Sub.batch [ Time.every 1000 Tick, Time.every 1000 CheckVoting ]
-
-
-init : ( Model, Cmd BackendMsg )
-init =
-    ( { currentQuestion = ""
-      , state = NoQuestion
-      , currentUsers = Dict.empty
-      , currentTime = Nothing
-      }
-    , Cmd.none
-    )
 
 
 isUserActive : User -> Int -> Int -> Bool
