@@ -1,7 +1,7 @@
 module Types exposing (..)
 
 import Browser exposing (UrlRequest)
-import Browser.Navigation exposing (Key)
+import Browser.Navigation as Nav exposing (Key)
 import Dict exposing (Dict)
 import Lamdera exposing (ClientId, SessionId)
 import Time
@@ -23,8 +23,11 @@ type alias FrontendModel =
     { key : Key
     , username : String
     , path : UiPath
+    , url : Url.Url
     , refinementState : Maybe BackendClientState
     , proposedQuestion : String
+    , userListVisible : Bool
+    , settingsMenuVisible : Bool
     }
 
 
@@ -72,6 +75,9 @@ type FrontendMsg
     | SubmitQuestion
     | SubmitVote Int
     | NewTime Time.Posix
+    | UserListToggle
+    | SettingsMenuToggle
+    | RequestServerReset
 
 
 type ToBackend
@@ -79,6 +85,7 @@ type ToBackend
     | StartVote String
     | Ping Time.Posix String
     | ClientVote Int
+    | RequestReset
 
 
 type BackendMsg
@@ -90,3 +97,35 @@ type BackendMsg
 type ToFrontend
     = NoOpToFrontend
     | ServerState BackendClientState
+    | Reset
+
+
+initFrontend : Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
+initFrontend url key =
+    ( { key = key
+      , url = url
+      , username = ""
+      , path = AskingUsername
+      , refinementState = Nothing
+      , proposedQuestion = ""
+      , settingsMenuVisible = False
+      , userListVisible = False
+      }
+    , Cmd.none
+    )
+
+
+emptyBackendModel : BackendModel
+emptyBackendModel =
+    { currentQuestion = ""
+    , state = NoQuestion
+    , currentUsers = Dict.empty
+    , currentTime = Nothing
+    }
+
+
+initBackend : ( BackendModel, Cmd BackendMsg )
+initBackend =
+    ( emptyBackendModel
+    , Cmd.none
+    )

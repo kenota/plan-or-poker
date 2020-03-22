@@ -6,11 +6,13 @@ import Dict as Dict
 import Element as E
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Icons exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Lamdera
@@ -25,7 +27,7 @@ type alias Model =
 
 app =
     Lamdera.frontend
-        { init = init
+        { init = Types.initFrontend
         , onUrlRequest = UrlClicked
         , onUrlChange = UrlChanged
         , update = update
@@ -33,18 +35,6 @@ app =
         , subscriptions = \m -> Time.every 1000 NewTime
         , view = view
         }
-
-
-init : Url.Url -> Nav.Key -> ( Model, Cmd FrontendMsg )
-init url key =
-    ( { key = key
-      , username = ""
-      , path = AskingUsername
-      , refinementState = Nothing
-      , proposedQuestion = ""
-      }
-    , Cmd.none
-    )
 
 
 update : FrontendMsg -> Model -> ( Model, Cmd FrontendMsg )
@@ -62,8 +52,17 @@ update msg model =
                     , Nav.load url
                     )
 
+        UserListToggle ->
+            ( { model | userListVisible = not model.userListVisible }, Cmd.none )
+
+        SettingsMenuToggle ->
+            ( { model | settingsMenuVisible = not model.settingsMenuVisible }, Cmd.none )
+
+        RequestServerReset ->
+            ( { model | settingsMenuVisible = False }, Lamdera.sendToBackend RequestReset )
+
         UrlChanged url ->
-            ( model, Cmd.none )
+            ( { model | url = url }, Cmd.none )
 
         NoOpFrontendMsg ->
             ( model, Cmd.none )
@@ -105,6 +104,20 @@ updateFromBackend msg model =
         ServerState s ->
             ( { model | refinementState = Just s }, Cmd.none )
 
+        Reset ->
+            let
+                newModel =
+                    { model
+                        | proposedQuestion = ""
+                        , refinementState = Nothing
+                        , userListVisible = False
+                        , settingsMenuVisible = False
+                        , username = ""
+                        , path = AskingUsername
+                    }
+            in
+            ( newModel, Cmd.none )
+
 
 manualCss =
     Html.node "link"
@@ -122,15 +135,16 @@ view model =
 
 
 headerStyle =
-    [ Font.size 28
+    [ Font.size 24
+    , Font.family
+        [ Font.typeface "Roboto" ]
     , E.width E.fill
-    , E.height (E.px 64)
-    , Background.color currentTheme.primary
-    , Font.color currentTheme.invertedText
+    , E.height (E.px 48)
+    , Font.color currentTheme.secondary
     , Border.shadow
         { offset = ( 0, 0 )
-        , size = 1
-        , blur = 1
+        , size = 0.2
+        , blur = 2
         , color = currentTheme.text
         }
     ]
@@ -313,27 +327,15 @@ mainLayout m =
 rootContainer : FrontendModel -> E.Element FrontendMsg
 rootContainer m =
     E.column [ E.centerX, E.width E.fill, E.height E.fill ]
-        [ header
+        [ E.row headerStyle [ header m ]
         , E.column
             [ E.centerX
             , E.width (E.fill |> E.maximum 800)
             , E.height E.fill
             ]
             [ E.el [ E.width E.fill, E.height (E.fillPortion 1) ] (selectView m)
-            , E.el [ E.width E.fill, E.height (E.fillPortion 1) ] (permanentuserList m)
             ]
         ]
-
-
-permanentuserList : FrontendModel -> E.Element FrontendMsg
-permanentuserList m =
-    case m.refinementState of
-        Nothing ->
-            E.column [] []
-
-        Just s ->
-            E.column []
-                [ listOfUsers <| Dict.values s.backendModel.currentUsers ]
 
 
 selectView : FrontendModel -> E.Element FrontendMsg
@@ -418,11 +420,99 @@ renderSpecificResults votes score =
     [ E.wrappedRow [] [] ]
 
 
-header : E.Element FrontendMsg
-header =
+header : FrontendModel -> E.Element FrontendMsg
+header m =
     E.row
-        headerStyle
-        [ E.el [ E.centerX ] (E.text "Plan or poker") ]
+        [ E.width (E.fill |> E.maximum 800), E.centerX ]
+        [ E.el [ E.paddingEach { top = 0, right = 0, bottom = 0, left = 24 } ] (E.text "Plan or poker")
+        , E.el [ E.alignRight, E.paddingEach { top = 0, right = 5, bottom = 0, left = 0 } ] (userCounter m)
+        ]
+
+
+maybeUserList : FrontendModel -> Maybe (List (E.Attribute FrontendMsg))
+maybeUserList m =
+    case m.refinementState of
+        Just backend ->
+            case m.userListVisible of
+                True ->
+                    Just
+                        [ E.below
+                            (E.column
+                                [ Background.color currentTheme.invertedText
+                                , Border.color currentTheme.primary
+                                , Border.width 1
+                                , Border.rounded 3
+                                , E.alignRight
+                                ]
+                                [ listOfUsers <| Dict.values backend.backendModel.currentUsers ]
+                            )
+                        ]
+
+                False ->
+                    Nothing
+
+        Nothing ->
+            Nothing
+
+
+maybeSettingsMenu : FrontendModel -> Maybe (List (E.Attribute FrontendMsg))
+maybeSettingsMenu m =
+    case m.refinementState of
+        Just backend ->
+            case m.settingsMenuVisible of
+                True ->
+                    Just
+                        [ E.below
+                            (E.column
+                                [ Background.color currentTheme.invertedText
+                                , Border.color currentTheme.primary
+                                , Border.width 1
+                                , Border.rounded 3
+                                , E.alignRight
+                                , E.padding 10
+                                ]
+                                [ Input.button
+                                    mainButtonStyle
+                                    { label = E.text "Reset"
+                                    , onPress = Just RequestServerReset
+                                    }
+                                ]
+                            )
+                        ]
+
+                False ->
+                    Nothing
+
+        Nothing ->
+            Nothing
+
+
+userCounter : FrontendModel -> E.Element FrontendMsg
+userCounter m =
+    case m.refinementState of
+        Just backend ->
+            E.row
+                (Maybe.withDefault [] (maybeUserList m) ++ [ E.spacing 8 ])
+                [ E.el [] userIcon
+                , E.el
+                    [ Font.color currentTheme.invertedText
+                    , Background.color currentTheme.primary
+                    , E.padding 6
+                    , Border.rounded 10
+                    , Events.onClick UserListToggle
+                    ]
+                    (E.text (String.fromInt <| Dict.size backend.backendModel.currentUsers))
+                , E.el
+                    (Maybe.withDefault
+                        []
+                        (maybeSettingsMenu m)
+                        ++ [ Events.onClick SettingsMenuToggle ]
+                    )
+                    settingsIcon
+                ]
+
+        Nothing ->
+            E.el [] (E.text "")
 
 
 type alias Theme =
@@ -450,12 +540,12 @@ listOfUsers l =
         nameList =
             List.sort (List.map (\x -> x.name) l)
     in
-    E.column [ E.spacing 12 ] (List.map renderUser nameList)
+    E.column [ E.padding 12 ] (List.map renderUser nameList)
 
 
 renderUser : String -> E.Element FrontendMsg
 renderUser s =
-    E.row [ E.paddingEach { top = 0, right = 0, bottom = 0, left = 12 } ] [ E.text ("\u{1F9CD}" ++ s) ]
+    E.row [ E.paddingEach { top = 0, right = 0, bottom = 0, left = 12 } ] [ E.text s ]
 
 
 cards : List Int

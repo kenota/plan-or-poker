@@ -13,7 +13,7 @@ type alias Model =
 
 app =
     Lamdera.backend
-        { init = init
+        { init = Types.initBackend
         , update = update
         , updateFromFrontend = updateFromFrontend
         , subscriptions = subscriptions
@@ -23,17 +23,6 @@ app =
 subscriptions : Model -> Sub BackendMsg
 subscriptions model =
     Sub.batch [ Time.every 1000 Tick, Time.every 1000 CheckVoting ]
-
-
-init : ( Model, Cmd BackendMsg )
-init =
-    ( { currentQuestion = ""
-      , state = NoQuestion
-      , currentUsers = Dict.empty
-      , currentTime = Nothing
-      }
-    , Cmd.none
-    )
 
 
 isUserActive : User -> Int -> Int -> Bool
@@ -129,6 +118,16 @@ updateFromFrontend sessionId clientId msg model =
             , Cmd.batch [ sendHello, broadcastCurrentState m.currentUsers m ]
             )
 
+        RequestReset ->
+            let
+                oldUsers =
+                    model.currentUsers
+
+                newModel =
+                    Types.emptyBackendModel
+            in
+            ( newModel, broadcastReset oldUsers )
+
         StartVote q ->
             let
                 m =
@@ -182,6 +181,14 @@ updateFromFrontend sessionId clientId msg model =
 broadcast clients msg =
     clients
         |> List.map (\c -> Lamdera.sendToFrontend c msg)
+        |> Cmd.batch
+
+
+broadcastReset : Dict ClientId User -> Cmd BackendMsg
+broadcastReset clients =
+    clients
+        |> Dict.map (\clientId conn -> Lamdera.sendToFrontend conn.id Reset)
+        |> Dict.values
         |> Cmd.batch
 
 
