@@ -141,12 +141,7 @@ headerStyle =
     , E.width E.fill
     , E.height (E.px 48)
     , Font.color currentTheme.secondary
-    , Border.shadow
-        { offset = ( 0, 0 )
-        , size = 0.2
-        , blur = 2
-        , color = currentTheme.text
-        }
+    , E.paddingEach { top = 0, right = 16, bottom = 0, left = 16 }
     ]
 
 
@@ -178,9 +173,9 @@ onEnter msg =
 
 joinBlock : FrontendModel -> E.Element FrontendMsg
 joinBlock m =
-    E.row [ E.centerX, E.width (E.fill |> E.maximum 800), E.spacing 10, E.padding 10 ]
+    E.row [ E.centerX, E.width (E.fill |> E.maximum 800), E.spacing 10 ]
         [ Input.text [ onEnter Join ]
-            { label = Input.labelLeft [ E.padding 10 ] (E.text "Name")
+            { label = Input.labelLeft [ E.centerY, E.alignLeft ] (E.text "Name")
             , onChange = newName
             , placeholder = Just (Input.placeholder [] (E.text "Hello"))
             , text = m.username
@@ -199,11 +194,10 @@ askQuestionBlock m =
         [ E.centerX
         , E.width E.fill
         , E.spacing 10
-        , E.padding 10
         ]
         [ Input.text
             []
-            { label = Input.labelLeft [ E.padding 10 ] (E.text "Question")
+            { label = Input.labelLeft [ E.centerY ] (E.text "Question")
             , onChange = newQuestion
             , placeholder = Nothing
             , text = m.proposedQuestion
@@ -253,7 +247,7 @@ renderVotingStatus q totalUsers =
 
 renderVoteButtons : E.Element FrontendMsg
 renderVoteButtons =
-    E.row [ E.width E.fill, E.spacing 10, E.spaceEvenly, E.paddingEach { top = 0, right = 14, bottom = 10, left = 14 } ]
+    E.row [ E.width E.fill, E.spacing 10, E.spaceEvenly ]
         (List.map
             (\score -> voteButton score)
             cards
@@ -282,13 +276,13 @@ renderServerState : FrontendModel -> BackendClientState -> E.Element FrontendMsg
 renderServerState f b =
     case b.backendModel.state of
         NoQuestion ->
-            E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
+            E.column [ E.width E.fill, E.spacing 10 ]
                 [ askQuestionBlock f
                 ]
 
         Voting q ->
             E.column [ E.width E.fill ]
-                [ E.row [ E.padding 10, E.width E.fill ]
+                [ E.row [ E.width E.fill, E.paddingEach { top = 10, right = 0, bottom = 10, left = 0 } ]
                     [ renderQuestion q
                     , E.el [ E.alignRight ] (renderVotingStatus q <| Dict.size b.backendModel.currentUsers)
                     ]
@@ -300,7 +294,7 @@ renderServerState f b =
                 ]
 
         VoteComplete q ->
-            E.column [ E.width E.fill, E.spacing 10, E.padding 10 ]
+            E.column [ E.width E.fill, E.spacing 10 ]
                 [ renderQuestion q
                 , renderVoteResults q.votes
                 , askQuestionBlock f
@@ -327,14 +321,31 @@ mainLayout m =
 rootContainer : FrontendModel -> E.Element FrontendMsg
 rootContainer m =
     E.column [ E.centerX, E.width E.fill, E.height E.fill ]
-        [ E.row headerStyle [ header m ]
-        , E.column
+        [ E.row
+            [ E.width E.fill
+            , E.height (E.px 48)
+            , Border.shadow
+                { offset = ( 0, 0 )
+                , size = 0.01
+                , blur = 1
+                , color = currentTheme.text
+                }
+            ]
+            [ E.el
+                [ E.centerX
+                , E.centerY
+                , E.width (E.fill |> E.maximum 800)
+                , E.height E.fill
+                ]
+                (header m)
+            ]
+        , E.el
             [ E.centerX
             , E.width (E.fill |> E.maximum 800)
             , E.height E.fill
+            , E.paddingEach { top = 12, right = 16, bottom = 0, left = 16 }
             ]
-            [ E.el [ E.width E.fill, E.height (E.fillPortion 1) ] (selectView m)
-            ]
+            (E.row [ E.width E.fill ] [ selectView m ])
         ]
 
 
@@ -352,7 +363,7 @@ selectView m =
                 Just s ->
                     E.column
                         [ E.centerX
-                        , E.width (E.fill |> E.maximum 800)
+                        , E.width E.fill
                         ]
                         [ renderServerState m s ]
 
@@ -423,8 +434,8 @@ renderSpecificResults votes score =
 header : FrontendModel -> E.Element FrontendMsg
 header m =
     E.row
-        [ E.width (E.fill |> E.maximum 800), E.centerX ]
-        [ E.el [ E.paddingEach { top = 0, right = 0, bottom = 0, left = 24 } ] (E.text "Plan or poker")
+        headerStyle
+        [ E.el [] (E.text "Plan or poker")
         , E.el [ E.alignRight, E.paddingEach { top = 0, right = 5, bottom = 0, left = 0 } ] (userCounter m)
         ]
 
