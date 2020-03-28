@@ -412,14 +412,21 @@ voteBlock votes score =
     else
         [ E.column
             [ E.spacing 10
-            , E.padding 10
             , Border.width 1
-            , Border.rounded 4
+            , Border.rounded 1
+            , E.alignTop
             ]
             (List.append
-                [ E.el [ E.centerX ] (E.text <| String.fromInt score) ]
+                [ E.el
+                    [ Background.color currentTheme.secondary
+                    , E.width E.fill
+                    , E.paddingEach { top = 5, right = 0, bottom = 5, left = 0 }
+                    , Font.color currentTheme.invertedText
+                    ]
+                    (E.el [ E.centerX ] (E.text <| String.fromInt score))
+                ]
                 (List.map
-                    (\v -> E.el [] (E.text v.name))
+                    (\v -> E.el [ E.paddingEach { top = 0, right = 16, bottom = 5, left = 16 } ] (E.text v.name))
                     filteredVotes
                 )
             )
