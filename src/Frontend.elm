@@ -411,24 +411,29 @@ voteBlock votes score =
 
     else
         [ E.column
-            [ E.spacing 10
-            , Border.width 1
-            , Border.rounded 1
-            , E.alignTop
+            [ E.alignTop
             ]
             (List.append
                 [ E.el
                     [ Background.color currentTheme.secondary
+                    , Border.roundEach { topLeft = 3, topRight = 3, bottomRight = 0, bottomLeft = 0 }
                     , E.width E.fill
                     , E.paddingEach { top = 5, right = 0, bottom = 5, left = 0 }
                     , Font.color currentTheme.invertedText
                     ]
                     (E.el [ E.centerX ] (E.text <| String.fromInt score))
                 ]
-                (List.map
-                    (\v -> E.el [ E.paddingEach { top = 0, right = 16, bottom = 5, left = 16 } ] (E.text v.name))
-                    filteredVotes
-                )
+                [ E.column
+                    [ Border.widthEach { top = 0, right = 1, bottom = 1, left = 1 }
+                    , Border.roundEach { topLeft = 0, topRight = 0, bottomRight = 3, bottomLeft = 3 }
+                    , Border.color currentTheme.border
+                    , E.paddingEach { top = 5, right = 0, bottom = 0, left = 0 }
+                    ]
+                    (List.map
+                        (\v -> E.el [ E.paddingEach { top = 0, right = 16, bottom = 5, left = 16 } ] (E.text v.name))
+                        filteredVotes
+                    )
+                ]
             )
         ]
 
@@ -539,6 +544,7 @@ type alias Theme =
     , secondary : E.Color
     , background : E.Color
     , invertedText : E.Color
+    , border : E.Color
     }
 
 
@@ -549,6 +555,7 @@ currentTheme =
     , text = E.rgb255 37 42 52
     , background = E.rgb255 255 255 255
     , invertedText = E.rgb255 255 255 255
+    , border = E.rgb255 200 200 200
     }
 
 
