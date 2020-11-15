@@ -1,46 +1,35 @@
-module Evergreen.Migrate.V4 exposing (..)
+module Evergreen.Migrate.V7 exposing (..)
 
-import Evergreen.V3.Types as Old
-import Evergreen.V4.Types as New
+import Evergreen.V4.Types as Old
+import Evergreen.V7.Types as New
 import Lamdera.Migrations exposing (..)
-import Url exposing (..)
 
 
 frontendModel : Old.FrontendModel -> ModelMigration New.FrontendModel New.FrontendMsg
 frontendModel old =
-    let
-        initUrl =
-            { protocol = Https
-            , host = ""
-            , port_ = Nothing
-            , path = "/"
-            , query = Nothing
-            , fragment = Nothing
-            }
-    in
-    ModelMigrated <| New.initFrontend initUrl old.key
+    Unimplemented
 
 
 backendModel : Old.BackendModel -> ModelMigration New.BackendModel New.BackendMsg
 backendModel old =
-    ModelUnchanged
+    Unimplemented
 
 
 frontendMsg : Old.FrontendMsg -> MsgMigration New.FrontendMsg New.FrontendMsg
 frontendMsg old =
-    MsgUnchanged
+    Unimplemented
 
 
 toBackend : Old.ToBackend -> MsgMigration New.ToBackend New.BackendMsg
 toBackend old =
-    MsgUnchanged
+    Unimplemented
 
 
 backendMsg : Old.BackendMsg -> MsgMigration New.BackendMsg New.BackendMsg
 backendMsg old =
-    MsgUnchanged
+    Unimplemented
 
 
 toFrontend : Old.ToFrontend -> MsgMigration New.ToFrontend New.FrontendMsg
 toFrontend old =
-    MsgUnchanged
+    Unimplemented
