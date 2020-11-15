@@ -1,0 +1,33 @@
+{
+  "name": "plan-or-poker",
+  "version": "1.0.0",
+  "description": "Scrum planning poker web app built using Lamdera (lamdera.app)",
+  "main": "index.js",
+  "scripts": {
+    "make-tailwind": "postcss -o public/main.css main.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kenota/plan-or-poker.git"
+  },
+  "keywords": [
+    "elm",
+    "lamdera"
+  ],
+  "author": "Egor Ermakov <unplaced@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kenota/plan-or-poker/issues"
+  },
+  "homepage": "https://github.com/kenota/plan-or-poker#readme",
+  "dependencies": {
+    "autoprefixer": "^10.0.2",
+    "tailwindcss": "^1.9.6"
+  },
+  "devDependencies": {
+    "cssnano": "^4.1.10",
+    "postcss": "^8.1.7",
+    "postcss-cli": "^8.2.0",
+    "postcss-elm-tailwind": "^0.10.0"
+  }
+}
