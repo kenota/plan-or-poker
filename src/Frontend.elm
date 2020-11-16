@@ -10,12 +10,13 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes
-import Html.Events
+import Html.Attributes as A
+import Html.Events as HE
 import Icons exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Lamdera
+import TW
 import Time
 import Types exposing (..)
 import Url
@@ -121,8 +122,16 @@ updateFromBackend msg model =
 
 manualCss =
     Html.node "link"
-        [ Html.Attributes.property "href" (Encode.string "https://fonts.googleapis.com/css2?family=Roboto&family=Rubik:wght@300&display=swap")
-        , Html.Attributes.property "rel" (Encode.string "stylesheet")
+        [ A.property "href" (Encode.string "https://fonts.googleapis.com/css2?family=Roboto&family=Rubik:wght@300&display=swap")
+        , A.property "rel" (Encode.string "stylesheet")
+        ]
+        []
+
+
+tailwindCss =
+    Html.node "link"
+        [ A.property "href" (Encode.string "/public/main.css")
+        , A.property "rel" (Encode.string "stylesheet")
         ]
         []
 
@@ -130,7 +139,7 @@ manualCss =
 view : Model -> Browser.Document FrontendMsg
 view model =
     { title = "Planning poker"
-    , body = [ manualCss, mainLayout model ]
+    , body = [ manualCss, tailwindCss, mainLayout model ]
     }
 
 
@@ -157,17 +166,21 @@ normalText =
 onEnter : msg -> E.Attribute msg
 onEnter msg =
     E.htmlAttribute
-        (Html.Events.on "keyup"
-            (Decode.field "key" Decode.string
-                |> Decode.andThen
-                    (\key ->
-                        if key == "Enter" then
-                            Decode.succeed msg
+        (onEnterHTMLInput msg)
 
-                        else
-                            Decode.fail "Not the enter key"
-                    )
-            )
+
+onEnterHTMLInput : msg -> Html.Attribute msg
+onEnterHTMLInput msg =
+    HE.on "keyup"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Enter" then
+                        Decode.succeed msg
+
+                    else
+                        Decode.fail "Not the enter key"
+                )
         )
 
 
@@ -313,9 +326,299 @@ newQuestion q =
 
 mainLayout : FrontendModel -> Html FrontendMsg
 mainLayout m =
-    E.layout
-        [ Background.color currentTheme.background ]
-        (rootContainer m)
+    case m.path of
+        AskingUsername ->
+            Html.div
+                [ TW.min_h_screen
+                , TW.flex
+                , TW.items_center
+                , TW.justify_center
+                , TW.bg_gray_100
+                , TW.py_12
+                , TW.px_4
+                , TW.sm__px_6
+                , TW.lg__px_8
+                ]
+                [ Html.div
+                    [ TW.max_w_md
+                    , TW.w_full
+                    ]
+                    [ Html.div
+                        []
+                        [ Html.h1 [ TW.mt_6, TW.text_center, TW.text_3xl, TW.leading_9, TW.font_extrabold, TW.text_gray_900 ] [ Html.text "Welcome to Plan or Poker" ] ]
+                    , Html.div
+                        [ TW.mt_8 ]
+                        [ Html.div
+                            [ TW.rounded_md, TW.shadow_sm ]
+                            [ Html.input [ onEnterHTMLInput Join, A.placeholder "Your name", HE.onInput newName, TW.appearance_none, TW.rounded_md, TW.relative, TW.block, TW.w_full, TW.px_3, TW.py_2, TW.border, TW.border_gray_300, TW.placeholder_gray_500, TW.text_gray_900, TW.focus__outline_none, TW.z_10 ] [] ]
+                        , Html.div
+                            [ TW.mt_6 ]
+                            [ Html.button
+                                [ HE.onClick Join, TW.relative, TW.w_full, TW.flex, TW.justify_center, TW.py_2, TW.px_4, TW.border, TW.border_transparent, TW.text_sm, TW.leading_5, TW.font_medium, TW.rounded_md, TW.text_white, TW.bg_indigo_600, TW.hover__bg_indigo_500, TW.focus__outline_none, TW.focus__border_indigo_700 ]
+                                [ Html.text "Join" ]
+                            ]
+                        ]
+                    ]
+                ]
+
+        UsernameReceived ->
+            Html.div
+                [ TW.flex, TW.flex_row, TW.h_screen, TW.w_screen, TW.justify_center, TW.bg_gray_100 ]
+                [ Html.div
+                    [ TW.flex, TW.flex_row, TW.h_screen, TW.w_5over6, TW.max_w_4xl ]
+                    [ Html.div
+                        [ TW.flex_grow, TW.m_2 ]
+                        (questionForm
+                            ++ [ Html.div
+                                    [ TW.bg_white, TW.shadow, TW.overflow_hidden, TW.sm__rounded_lg ]
+                                    [ Html.div
+                                        [ TW.px_4, TW.py_5, TW.border_b, TW.border_gray_200 ]
+                                        [ Html.h3 [ TW.text_lg, TW.leading_6, TW.font_medium, TW.text_gray_900 ] [ Html.text <| getQuestionOrPlaceholder m.refinementState ] ]
+                                    , Html.div
+                                        [ TW.flex, TW.flex_col ]
+                                        [ Html.div
+                                            [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
+                                            [ Html.text "Your vote" ]
+                                        , renderNewVoteBlock m
+
+                                        -- , Html.div
+                                        --     [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
+                                        --     [ Html.text "Voting progress" ]
+                                        -- , Html.div
+                                        --     []
+                                        --     [ Html.text "Progress here" ]
+                                        , Html.div
+                                            [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
+                                            [ Html.text "Voting results" ]
+                                        , Maybe.withDefault (Html.div [] []) (Maybe.map renderNewVotingResults (getBackendModel m))
+                                        ]
+                                    ]
+                               ]
+                        )
+                    , Html.div
+                        [ TW.w_48, TW.flex_none, TW.m_2, TW.rounded_md ]
+                        [ Html.h3
+                            [ TW.text_center, TW.text_gray_900, TW.text_lg, TW.leading_6, TW.font_medium ]
+                            [ Html.text "User List" ]
+                        , renderNewUserList m.refinementState
+                        ]
+                    ]
+                ]
+
+
+getQuestionOrPlaceholder : Maybe BackendClientState -> String
+getQuestionOrPlaceholder maybe =
+    case maybe of
+        Nothing ->
+            "Connecting"
+
+        Just wrapper ->
+            case wrapper.backendModel.state of
+                NoQuestion ->
+                    ""
+
+                Voting q ->
+                    q.question
+
+                VoteComplete q ->
+                    q.question
+
+
+{-| QuestionHeaderBlock will render the top main panel unit, it functions two ways:
+
+  - Showing the current question text
+  - Showing input field to enter question
+
+-}
+maybeQuestionInputForm : FrontendModel -> List (Html FrontendMsg)
+maybeQuestionInputForm m =
+    case m.refinementState of
+        Nothing ->
+            []
+
+        Just wrapper ->
+            case wrapper.backendModel.state of
+                NoQuestion ->
+                    questionForm
+
+                Voting q ->
+                    [ Html.div [] [ Html.text "Voting in progress" ] ]
+
+                VoteComplete q ->
+                    questionForm
+
+
+questionForm : List (Html FrontendMsg)
+questionForm =
+    [ Html.div
+        [ TW.flex, TW.flex_row, TW.space_x_3, TW.pt_5, TW.pb_5 ]
+        [ Html.div
+            [ TW.flex_grow, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
+            [ Html.input [ onEnterHTMLInput SubmitQuestion, A.placeholder "Your queston", HE.onInput newQuestion, TW.appearance_none, TW.rounded_md, TW.relative, TW.block, TW.w_full, TW.px_3, TW.py_2, TW.border, TW.border_gray_300, TW.placeholder_gray_500, TW.text_gray_900, TW.focus__outline_none, TW.z_10 ] [] ]
+        , Html.div
+            [ TW.flex_none, TW.w_32 ]
+            [ Html.button
+                [ HE.onClick SubmitQuestion, TW.relative, TW.w_full, TW.flex, TW.justify_center, TW.py_2, TW.px_4, TW.border, TW.border_transparent, TW.text_sm, TW.leading_5, TW.font_medium, TW.rounded_md, TW.text_white, TW.bg_indigo_600, TW.hover__bg_indigo_500, TW.focus__outline_none, TW.focus__border_indigo_700 ]
+                [ Html.text "Submit" ]
+            ]
+        ]
+    ]
+
+
+getBackendModel : FrontendModel -> Maybe BackendModel
+getBackendModel m =
+    case m.refinementState of
+        Nothing ->
+            Nothing
+
+        Just wrapper ->
+            Just wrapper.backendModel
+
+
+renderNewVoteBlock : FrontendModel -> Html FrontendMsg
+renderNewVoteBlock m =
+    case m.refinementState of
+        Nothing ->
+            Html.div [] [ Html.text "loading" ]
+
+        Just s ->
+            case s.backendModel.state of
+                NoQuestion ->
+                    Html.div
+                        [ TW.px_4, TW.pt_0, TW.pb_5, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
+                        [ Html.text "No vote is in progress" ]
+
+                Voting q ->
+                    let
+                        v =
+                            getMyVote q.votes s.id
+                    in
+                    Html.div
+                        [ TW.px_4, TW.pt_0, TW.pb_5, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
+                        [ Html.div
+                            [ TW.flex, TW.flex_row, TW.space_x_6 ]
+                            (List.map (renderNewVoteButton v) cards)
+                        ]
+
+                VoteComplete q ->
+                    let
+                        v =
+                            getMyVote q.votes s.id
+                    in
+                    Html.div
+                        [ TW.px_4, TW.pt_0, TW.pb_5, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
+                        [ Html.div
+                            [ TW.flex, TW.flex_row, TW.space_x_6 ]
+                            (List.map (renderNewVoteButton v) cards)
+                        ]
+
+
+renderNewVoteButton : Maybe Vote -> Int -> Html FrontendMsg
+renderNewVoteButton myVote score =
+    let
+        bg =
+            case myVote of
+                Nothing ->
+                    TW.bg_indigo_300
+
+                Just v ->
+                    if v.score == score then
+                        TW.bg_indigo_700
+
+                    else
+                        TW.bg_indigo_300
+    in
+    Html.div
+        [ HE.onClick <| SubmitVote score, TW.w_10, TW.h_10, bg, TW.hover__bg_indigo_700, TW.cursor_pointer, TW.rounded_md, TW.flex, TW.flex_col, TW.justify_center, TW.text_center ]
+        [ Html.span [ TW.text_white, TW.text_lg, TW.font_bold ] [ Html.text (String.fromInt score) ] ]
+
+
+renderNewUserList : Maybe BackendClientState -> Html msg
+renderNewUserList m =
+    case m of
+        Nothing ->
+            Html.h2
+                [ TW.text_center, TW.text_gray_500, TW.leading_6, TW.font_medium ]
+                [ Html.text "Loading" ]
+
+        Just serverState ->
+            Html.div
+                [ TW.flex, TW.flex_col, TW.text_sm, TW.leading_5, TW.border, TW.border_gray_200, TW.rounded_md ]
+                (renderUsers
+                    serverState.backendModel.currentUsers
+                )
+
+
+renderUsers : Dict.Dict Lamdera.ClientId User -> List (Html msg)
+renderUsers d =
+    let
+        users =
+            Dict.values d
+    in
+    List.map renderNewUserRow (List.sortBy .name users)
+
+
+renderNewUserRow : User -> Html msg
+renderNewUserRow u =
+    Html.div
+        [ TW.flex, TW.flex_row, TW.w_auto, TW.pl_3, TW.pr_4, TW.py_3 ]
+        [ Html.div
+            [ TW.flex_grow, TW.text_gray_700, TW.truncate ]
+            [ Html.text u.name ]
+        ]
+
+
+renderNewVotingResults : BackendModel -> Html FrontendMsg
+renderNewVotingResults backendModel =
+    case backendModel.state of
+        VoteComplete question ->
+            Html.div
+                [ TW.space_x_3, TW.px_4, TW.pt_0, TW.pb_5, TW.leading_5, TW.text_gray_900 ]
+                (listNewVotes question.votes)
+
+        _ ->
+            Html.div [] []
+
+
+listNewVotes : List Vote -> List (Html FrontendMsg)
+listNewVotes votes =
+    List.concat <|
+        List.map (listVotesForScore votes) cards
+
+
+listVotesForScore : List Vote -> Int -> List (Html FrontendMsg)
+listVotesForScore votes score =
+    let
+        filteredVotes =
+            List.filterMap (onlyScoredAs score) votes
+    in
+    if List.length filteredVotes == 0 then
+        []
+
+    else
+        [ Html.div
+            [ TW.inline_block, TW.border, TW.align_top, TW.border_gray_200, TW.rounded_md, TW.overflow_hidden, TW.w_32 ]
+            [ Html.div
+                [ TW.flex, TW.flex_col ]
+                [ Html.div
+                    [ TW.bg_indigo_700, TW.text_white, TW.text_sm, TW.font_bold, TW.pt_1, TW.pb_1, TW.text_center ]
+                    [ Html.text <| String.fromInt score ]
+                , Html.div
+                    [ TW.flex, TW.flex_col ]
+                    (List.map voteAuthorInResult filteredVotes)
+                ]
+            ]
+        ]
+
+
+voteAuthorInResult : Vote -> Html FrontendMsg
+voteAuthorInResult vote =
+    Html.div
+        [ TW.border_gray_200, TW.flex, TW.flex_row, TW.w_auto, TW.pl_3, TW.pr_4, TW.py_1 ]
+        [ Html.div
+            [ TW.flex_grow, TW.text_gray_900, TW.truncate, TW.text_xs ]
+            [ Html.text vote.name ]
+        ]
 
 
 rootContainer : FrontendModel -> E.Element FrontendMsg
@@ -386,18 +689,19 @@ onlyScoredAs score vote =
         Nothing
 
 
+getMyVote : List Vote -> Lamdera.ClientId -> Maybe Vote
+getMyVote votes clientId =
+    List.head <| List.filter (\x -> x.clientId == clientId) votes
+
+
 didIVote : List Vote -> Lamdera.ClientId -> Bool
 didIVote votes clientId =
-    let
-        u =
-            List.head <| List.filter (\x -> x.clientId == clientId) votes
-    in
-    case u of
-        Just _ ->
-            True
-
+    case getMyVote votes clientId of
         Nothing ->
             False
+
+        Just _ ->
+            True
 
 
 voteBlock : List Vote -> Int -> List (E.Element FrontendMsg)
