@@ -398,11 +398,35 @@ mainLayout m =
                                ]
                         )
                     , Html.div
-                        [ TW.w_48, TW.flex_none, TW.m_2, TW.rounded_md ]
+                        [ TW.w_48, TW.flex_none, TW.m_2, TW.rounded_md, TW.flex, TW.flex_col ]
                         [ Html.h3
                             [ TW.text_center, TW.text_gray_900, TW.text_lg, TW.leading_6, TW.font_medium ]
                             [ Html.text "User List" ]
                         , renderNewUserList m.refinementState
+                        , Html.button
+                            [ TW.pt_8, TW.px_4 ]
+                            [ Html.button
+                                [ HE.onClick RequestServerReset
+                                , TW.relative
+                                , TW.w_full
+                                , TW.flex
+                                , TW.justify_center
+                                , TW.py_2
+                                , TW.px_4
+                                , TW.border
+                                , TW.border_transparent
+                                , TW.text_sm
+                                , TW.leading_5
+                                , TW.font_medium
+                                , TW.rounded_md
+                                , TW.text_white
+                                , TW.bg_orange_300
+                                , TW.hover__bg_orange_500
+                                , TW.focus__outline_none
+                                , TW.focus__border_orange_700
+                                ]
+                                [ Html.text "Reset" ]
+                            ]
                         ]
                     ]
                 ]
