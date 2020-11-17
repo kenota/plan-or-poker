@@ -13,16 +13,16 @@ type UiPath
     | UsernameReceived
 
 
-type alias Vote = 
+type alias Vote =
     { clientId : Lamdera.ClientId
     , score : Int
     , name : String
     }
 
 
-type alias Question = 
+type alias Question =
     { question : String
-    , votes : (List Vote)
+    , votes : List Vote
     }
 
 
@@ -32,22 +32,22 @@ type RefinementState
     | VoteComplete Question
 
 
-type alias User = 
+type alias User =
     { id : Lamdera.ClientId
     , name : String
-    , lastPing : (Maybe Int)
+    , lastPing : Maybe Int
     }
 
 
-type alias BackendModel = 
+type alias BackendModel =
     { currentQuestion : String
     , state : RefinementState
-    , currentUsers : (Dict.Dict Lamdera.ClientId User)
-    , currentTime : (Maybe Int)
+    , currentUsers : Dict.Dict Lamdera.ClientId User
+    , currentTime : Maybe Int
     }
 
 
-type alias BackendClientState = 
+type alias BackendClientState =
     { id : Lamdera.ClientId
     , backendModel : BackendModel
     }
@@ -58,18 +58,10 @@ type alias FrontendModel =
     , username : String
     , path : UiPath
     , url : Url.Url
-    , refinementState : (Maybe BackendClientState)
+    , refinementState : Maybe BackendClientState
     , proposedQuestion : String
     , userListVisible : Bool
     , settingsMenuVisible : Bool
-    }
-
-
-type alias BackendModel =
-    { currentQuestion : String
-    , state : RefinementState
-    , currentUsers : (Dict.Dict Lamdera.ClientId User)
-    , currentTime : (Maybe Int)
     }
 
 
