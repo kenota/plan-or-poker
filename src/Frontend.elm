@@ -16,6 +16,9 @@ import Icons exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Lamdera
+import Set exposing (Set)
+import Svg exposing (..)
+import Svg.Attributes as SA
 import TW
 import Time
 import Types exposing (..)
@@ -420,7 +423,7 @@ renderNewVoteProgress maybe =
                     renderVoteProgressBar (Dict.size backendState.backendModel.currentUsers) (List.length q.votes)
 
                 VoteComplete q ->
-                    Html.div [] [ Html.text "Vote complete" ]
+                    renderVoteProgressBar (Dict.size backendState.backendModel.currentUsers) (List.length q.votes)
 
 
 renderVoteProgressBar : Int -> Int -> Html FrontendMsg
@@ -556,25 +559,67 @@ renderNewUserList m =
                 [ TW.flex, TW.flex_col, TW.text_sm, TW.leading_5, TW.border, TW.border_gray_200, TW.rounded_md ]
                 (renderUsers
                     serverState.backendModel.currentUsers
+                 <|
+                    getVotedSet serverState.backendModel
                 )
 
 
-renderUsers : Dict.Dict Lamdera.ClientId User -> List (Html msg)
-renderUsers d =
+getVotedSet : BackendModel -> Set String
+getVotedSet b =
+    case b.state of
+        NoQuestion ->
+            Set.empty
+
+        VoteComplete q ->
+            Set.fromList <| List.map (\v -> v.name) q.votes
+
+        Voting q ->
+            Set.fromList <| List.map (\v -> v.name) q.votes
+
+
+renderUsers : Dict.Dict Lamdera.ClientId User -> Set String -> List (Html msg)
+renderUsers d voted =
     let
         users =
             Dict.values d
     in
-    List.map renderNewUserRow (List.sortBy .name users)
+    List.map (renderNewUserRow voted) (List.sortBy .name users)
 
 
-renderNewUserRow : User -> Html msg
-renderNewUserRow u =
+renderNewUserRow : Set String -> User -> Html msg
+renderNewUserRow voted u =
+    let
+        checkmark =
+            if Set.member u.name voted then
+                [ svg
+                    [ SA.class "w-5"
+                    , SA.class "h-5"
+                    , SA.class "text-gray-700"
+                    , SA.viewBox "0 0 24 24"
+                    , SA.stroke "currentColor"
+                    , SA.fill "none"
+                    ]
+                    [ path
+                        [ SA.d "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                        , SA.strokeLinecap "round"
+                        , SA.strokeLinejoin "round"
+                        , SA.strokeWidth "2"
+                        ]
+                        []
+                    ]
+                ]
+
+            else
+                []
+    in
     Html.div
         [ TW.flex, TW.flex_row, TW.w_auto, TW.pl_3, TW.pr_4, TW.py_3 ]
         [ Html.div
             [ TW.flex_grow, TW.text_gray_700, TW.truncate ]
             [ Html.text u.name ]
+        , Html.div
+            [ TW.w_6, TW.flex_none ]
+            checkmark
         ]
 
 
