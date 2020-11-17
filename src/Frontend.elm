@@ -133,7 +133,7 @@ manualCss =
 
 tailwindCss =
     Html.node "link"
-        [ A.property "href" (Encode.string "/public/main.css")
+        [ A.property "href" (Encode.string "/main.css")
         , A.property "rel" (Encode.string "stylesheet")
         ]
         []
