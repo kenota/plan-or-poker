@@ -556,7 +556,7 @@ renderNewUserList m =
 
         Just serverState ->
             Html.div
-                [ TW.flex, TW.flex_col, TW.text_sm, TW.leading_5, TW.border, TW.border_gray_200, TW.rounded_md ]
+                [ TW.overflow_hidden, TW.flex, TW.flex_col, TW.text_sm, TW.leading_5, TW.border, TW.border_gray_200, TW.rounded_md ]
                 (renderUsers
                     serverState.backendModel.currentUsers
                  <|
@@ -613,9 +613,9 @@ renderNewUserRow voted u =
                 []
     in
     Html.div
-        [ TW.flex, TW.flex_row, TW.w_auto, TW.pl_3, TW.pr_4, TW.py_3 ]
+        [ TW.border_gray_200, TW.border_b, TW.bg_white, TW.flex, TW.flex_row, TW.w_auto, TW.pl_3, TW.pr_4, TW.py_3 ]
         [ Html.div
-            [ TW.flex_grow, TW.text_gray_700, TW.truncate ]
+            [ TW.flex_grow, TW.text_gray_900, TW.truncate ]
             [ Html.text u.name ]
         , Html.div
             [ TW.w_6, TW.flex_none ]
