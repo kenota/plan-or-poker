@@ -368,7 +368,7 @@ mainLayout m =
                     [ TW.flex, TW.flex_row, TW.h_screen, TW.w_5over6, TW.max_w_4xl ]
                     [ Html.div
                         [ TW.flex_grow, TW.m_2 ]
-                        (questionForm
+                        (questionForm m.proposedQuestion
                             ++ [ Html.div
                                     [ TW.bg_white, TW.shadow, TW.overflow_hidden, TW.sm__rounded_lg ]
                                     [ Html.div
@@ -380,13 +380,12 @@ mainLayout m =
                                             [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
                                             [ Html.text "Your vote" ]
                                         , renderNewVoteBlock m
-
-                                        -- , Html.div
-                                        --     [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
-                                        --     [ Html.text "Voting progress" ]
-                                        -- , Html.div
-                                        --     []
-                                        --     [ Html.text "Progress here" ]
+                                        , Html.div
+                                            [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
+                                            [ Html.text "Voting progress" ]
+                                        , Html.div
+                                            [ TW.px_4, TW.pt_0, TW.pb_5, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
+                                            [ renderNewVoteProgress m.refinementState ]
                                         , Html.div
                                             [ TW.px_4, TW.py_5, TW.text_sm, TW.leading_5, TW.font_medium, TW.text_gray_500 ]
                                             [ Html.text "Voting results" ]
@@ -404,6 +403,41 @@ mainLayout m =
                         ]
                     ]
                 ]
+
+
+renderNewVoteProgress : Maybe BackendClientState -> Html FrontendMsg
+renderNewVoteProgress maybe =
+    case maybe of
+        Nothing ->
+            Html.div [] [ Html.text "" ]
+
+        Just backendState ->
+            case backendState.backendModel.state of
+                NoQuestion ->
+                    Html.div [] [ Html.text "" ]
+
+                Voting q ->
+                    renderVoteProgressBar (Dict.size backendState.backendModel.currentUsers) (List.length q.votes)
+
+                VoteComplete q ->
+                    Html.div [] [ Html.text "Vote complete" ]
+
+
+renderVoteProgressBar : Int -> Int -> Html FrontendMsg
+renderVoteProgressBar totalUsers voted =
+    let
+        pct =
+            (voted * 100) // totalUsers
+    in
+    Html.div
+        [ TW.relative, TW.pt_1 ]
+        [ Html.div
+            [ TW.overflow_hidden, TW.h_2, TW.mb_4, TW.text_xs, TW.flex, TW.rounded, TW.bg_indigo_300 ]
+            [ Html.div
+                [ A.style "width" (String.fromInt pct ++ "%"), TW.shadow_none, TW.flex, TW.flex_col, TW.bg_indigo_600 ]
+                []
+            ]
+        ]
 
 
 getQuestionOrPlaceholder : Maybe BackendClientState -> String
@@ -424,37 +458,13 @@ getQuestionOrPlaceholder maybe =
                     q.question
 
 
-{-| QuestionHeaderBlock will render the top main panel unit, it functions two ways:
-
-  - Showing the current question text
-  - Showing input field to enter question
-
--}
-maybeQuestionInputForm : FrontendModel -> List (Html FrontendMsg)
-maybeQuestionInputForm m =
-    case m.refinementState of
-        Nothing ->
-            []
-
-        Just wrapper ->
-            case wrapper.backendModel.state of
-                NoQuestion ->
-                    questionForm
-
-                Voting q ->
-                    [ Html.div [] [ Html.text "Voting in progress" ] ]
-
-                VoteComplete q ->
-                    questionForm
-
-
-questionForm : List (Html FrontendMsg)
-questionForm =
+questionForm : String -> List (Html FrontendMsg)
+questionForm proposedQuestion =
     [ Html.div
         [ TW.flex, TW.flex_row, TW.space_x_3, TW.pt_5, TW.pb_5 ]
         [ Html.div
             [ TW.flex_grow, TW.text_sm, TW.leading_5, TW.text_gray_900, TW.sm__mt_0 ]
-            [ Html.input [ onEnterHTMLInput SubmitQuestion, A.placeholder "Your queston", HE.onInput newQuestion, TW.appearance_none, TW.rounded_md, TW.relative, TW.block, TW.w_full, TW.px_3, TW.py_2, TW.border, TW.border_gray_300, TW.placeholder_gray_500, TW.text_gray_900, TW.focus__outline_none, TW.z_10 ] [] ]
+            [ Html.input [ A.value proposedQuestion, onEnterHTMLInput SubmitQuestion, A.placeholder "Your queston", HE.onInput newQuestion, TW.appearance_none, TW.rounded_md, TW.relative, TW.block, TW.w_full, TW.px_3, TW.py_2, TW.border, TW.border_gray_300, TW.placeholder_gray_500, TW.text_gray_900, TW.focus__outline_none, TW.z_10 ] [] ]
         , Html.div
             [ TW.flex_none, TW.w_32 ]
             [ Html.button
